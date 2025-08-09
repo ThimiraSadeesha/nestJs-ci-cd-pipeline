@@ -1,4 +1,4 @@
-name: Build and Push on Merge
+name: Build, Push and Deploy on Merge
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
       - main
 
 jobs:
-  build-and-push:
+  build-push-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -53,3 +53,21 @@ jobs:
           tags: |
             sadeeee/nest-ci-pipeline-production:latest
             sadeeee/nest-ci-pipeline-production:${{ github.sha }}
+
+      - name: Deploy to Linux server
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: 22
+          script: |
+            IMAGE_NAME="sadeeee/nest-ci-pipeline-$(if [ '${{ github.ref }}' == 'refs/heads/main' ]; then echo 'production'; else echo 'development'; fi):latest"
+            echo "Pulling $IMAGE_NAME"
+            docker pull $IMAGE_NAME
+            echo "Stopping and removing existing container..."
+            docker stop nest-ci || true
+            docker rm nest-ci || true
+            echo "Starting container..."
+            docker run -d --restart unless-stopped --name nest-ci -p 3000:3000 $IMAGE_NAME

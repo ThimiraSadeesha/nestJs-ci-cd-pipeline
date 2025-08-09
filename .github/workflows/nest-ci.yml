@@ -1,7 +1,7 @@
-name: PR Build and Push to Docker Hub
+name: Build and Push on Merge
 
 on:
-  pull_request:
+  push:
     branches:
       - dev
       - main
@@ -20,7 +20,7 @@ jobs:
           node-version: 18
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
       - name: Run tests
         run: npm run test
@@ -34,18 +34,22 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and Push Development Image (for PR to dev)
-        if: github.base_ref == 'dev'
+      - name: Build and Push Development Image (for dev branch)
+        if: github.ref == 'refs/heads/dev'
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: sadeeee/nest-ci-pipeline-development:pr-${{ github.event.pull_request.number }}
+          tags: |
+            sadeeee/nest-ci-pipeline-development:latest
+            sadeeee/nest-ci-pipeline-development:${{ github.sha }}
 
-      - name: Build and Push Production Image (for PR to main)
-        if: github.base_ref == 'main'
+      - name: Build and Push Production Image (for main branch)
+        if: github.ref == 'refs/heads/main'
         uses: docker/build-push-action@v5
         with:
           context: .
           push: true
-          tags: sadeeee/nest-ci-pipeline-production:pr-${{ github.event.pull_request.number }}
+          tags: |
+            sadeeee/nest-ci-pipeline-production:latest
+            sadeeee/nest-ci-pipeline-production:${{ github.sha }}

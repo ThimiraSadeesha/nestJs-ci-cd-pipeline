@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-push-deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted  # Changed from ubuntu-latest
 
     steps:
       - name: Checkout code
